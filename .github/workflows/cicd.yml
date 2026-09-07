@@ -52,3 +52,31 @@ jobs:
         run: |
           docker push \
             asia-northeast3-docker.pkg.dev/project-ec088c24-d2f6-4ac3-bbf/mlops-quicklab/trainer:${{ github.sha }}
+
+  deploy-to-vertex-ai:
+    if: github.event_name == 'push'
+    needs: deploy-to-artifact-repository
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - name: Set up Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Upload model to Vertex AI
+        run: |
+          gcloud ai models upload \
+            --project=project-ec088c24-d2f6-4ac3-bbf \
+            --region=asia-northeast3 \
+            --display-name=trainer-${{ github.sha }} \
+            --container-image-uri=asia-northeast3-docker.pkg.dev/project-ec088c24-d2f6-4ac3-bbf/mlops-quicklab/trainer:${{ github.sha }} \
+            --container-health-route=/ping \
+            --container-predict-route=/predictions/model \
+            --container-ports=7080
