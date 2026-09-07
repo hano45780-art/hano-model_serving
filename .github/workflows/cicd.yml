@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+  pull_request:
+    branches:
+      - main
+
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
@@ -18,6 +22,7 @@ jobs:
           echo "lint-and-test success"
 
   deploy-to-artifact-repository:
+    if: github.event_name == 'push'
     needs: lint-and-test
     runs-on: ubuntu-latest
 
@@ -30,6 +35,7 @@ jobs:
           echo "deploy-to-artifact-repository success"
 
   deploy-to-vertex-ai:
+    if: github.event_name == 'push'
     needs: deploy-to-artifact-repository
     runs-on: ubuntu-latest
 
