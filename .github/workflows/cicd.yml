@@ -30,19 +30,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Artifact Registry test
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - name: Set up Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Configure Docker for Artifact Registry
         run: |
-          echo "deploy-to-artifact-repository success"
+          gcloud auth configure-docker asia-northeast3-docker.pkg.dev --quiet
 
-  deploy-to-vertex-ai:
-    if: github.event_name == 'push'
-    needs: deploy-to-artifact-repository
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Vertex AI test
+      - name: Build Docker image
         run: |
-          echo "deploy-to-vertex-ai success"
+          docker build \
+            -t asia-northeast3-docker.pkg.dev/project-ec088c24-d2f6-4ac3-bbf/mlops-quicklab/trainer:${{ github.sha }} \
+            vertexai/predictions
+
+      - name: Push Docker image
+        run: |
+          docker push \
+            asia-northeast3-docker.pkg.dev/project-ec088c24-d2f6-4ac3-bbf/mlops-quicklab/trainer:${{ github.sha }}
